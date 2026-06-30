@@ -1,0 +1,402 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id                       String              @id @default(uuid())
+  email                    String              @unique
+  passwordHash             String
+  name                     String
+  role                     String
+  createdAt                DateTime            @default(now())
+  hospitalId               String?
+  username                 String?
+  fullName                 String?
+  mobile                   String?
+  currentMonthStartDate    DateTime            @default(now())
+  jobsPostedThisMonth      Int                 @default(0)
+  premiumSearchesThisMonth Int                 @default(0)
+  isSuspended              Boolean             @default(false)
+  deletedAt                DateTime?
+  tokenVersion             Int                 @default(0)
+  notifHighMatch           Boolean             @default(true)
+  notifOnApply             Boolean             @default(true)
+  notifWeekly              Boolean             @default(false)
+  planSuspendedAt          DateTime?
+  planSuspendedReason      String?
+  candidate                Candidate?
+  notifications            InAppNotification[]
+  jobsPosted               Job[]               @relation("JobPostedBy")
+  searchLogs               SearchLog[]
+  hospital                 Hospital?           @relation(fields: [hospitalId], references: [id])
+
+  @@unique([hospitalId, username])
+  @@unique([mobile, role], name: "unique_mobile_per_role")
+}
+
+model Hospital {
+  id                         String             @id @default(uuid())
+  name                       String
+  shortName                  String?
+  type                       String?
+  city                       String?
+  state                      String?
+  address                    String?
+  phone                      String?
+  email                      String?
+  website                    String?
+  registrationNumber         String?
+  beds                       Int?
+  founded                    Int?
+  about                      String?
+  specialties                Json
+  verified                   Boolean            @default(false)
+  verifiedOn                 String?
+  verifiedBy                 String?
+  onboardingStatus           String             @default("Pending")
+  onboardingNote             String?
+  onboardingPlan             String             @default("Basic")
+  maxRecruiters              Int                @default(2)
+  submittedBy                String?
+  submittedEmail             String?
+  submittedPhone             String?
+  submittedAt                DateTime?
+  approvedAt                 DateTime?
+  approvedBy                 String?
+  inviteCode                 String?            @unique
+  verifiedAt                 DateTime?
+  isSuspended                Boolean            @default(false)
+  deletedAt                  DateTime?
+  requestedDocuments         String?
+  mobileVerified             Boolean            @default(false)
+  planExpiresAt              DateTime?
+  pendingPlan                String?
+  pendingPlanAt              DateTime?
+  planBillingCycle           String?            @default("monthly")
+  brandName                  String?
+  registrationAuthority      String?
+  nabhStatus                 String?
+  nablStatus                 String?
+  gstNumber                  String?
+  panNumber                  String?
+  ownershipType              String?
+  contactDesignation         String?
+  contactWhatsapp            String?
+  contactAlternatePhone      String?
+  district                   String?
+  pinCode                    String?
+  billingName                String?
+  billingGstNumber           String?
+  billingAddress             String?
+  billingEmail               String?
+  billingPhone               String?
+  icuBeds                    Int?
+  numberOfDoctors            Int?
+  numberOfEmployees          Int?
+  averageMonthlyHiring       Int?
+  preferredHiringStates      String?
+  emergencyHiringRequirement Boolean?
+  internshipHiring           Boolean?
+  campusRecruitment          Boolean?
+  documents                  HospitalDocument[]
+  jobs                       Job[]
+  paymentOrders              PaymentOrder[]
+  planChangeLogs             PlanChangeLog[]
+  users                      User[]
+
+  @@index([onboardingStatus, deletedAt])
+}
+
+model HospitalDocument {
+  id           String   @id @default(uuid())
+  hospitalId   String
+  name         String
+  cloudinaryId String
+  url          String
+  type         String   @default("verification")
+  uploadedAt   DateTime @default(now())
+  hospital     Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id                      String        @id @default(uuid())
+  role                    String
+  category                String?
+  specialty               String
+  subSpecialty            String?
+  location                String
+  city                    String?
+  salaryMin               Float
+  salaryMax               Float
+  experienceMin           Int?
+  experienceMax           Int?
+  experience              String?
+  type                    String
+  shift                   String?
+  status                  String        @default("Active")
+  postedDays              Int?
+  postedOn                DateTime?
+  description             String
+  responsibilities        String?
+  requirements            String?
+  perks                   String?
+  tags                    Json?
+  /// JSON array of recruiter-defined application fields for this job
+  customApplicationFields Json?
+  hospitalId              String
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  visibilityEndsAt        DateTime?
+  isFlagged               Boolean       @default(false)
+  postedById              String?
+  closedReason            String?
+  applications            Application[]
+  hospital                Hospital      @relation(fields: [hospitalId], references: [id])
+  postedBy                User?         @relation("JobPostedBy", fields: [postedById], references: [id])
+  savedBy                 SavedJob[]
+
+  @@index([status, visibilityEndsAt])
+  @@index([role])
+  @@index([location])
+  @@index([specialty])
+}
+
+model Candidate {
+  id                  String        @id @default(uuid())
+  name                String
+  initials            String?
+  role                String?
+  specialty           String?
+  experienceYears     Int?
+  location            String?
+  currentEmployer     String?
+  summary             String?
+  matchPercent        Int?
+  verified            Boolean       @default(false)
+  registration        String?
+  email               String        @unique
+  phone               String?
+  languages           String?
+  procedures          String?
+  skills              Json?
+  education           Json?
+  certifications      Json?
+  experience          Json?
+  profileJson         Json?
+  cvSource            String?
+  uploadedCvName      String?
+  uploadedCvMime      String?
+  cvCloudinaryId      String?
+  cvUrl               String?
+  userId              String?       @unique
+  supportingDocuments Json?
+  expectedSalaryMin   Float?
+  expectedSalaryMax   Float?
+  currentSalaryMin    Float?
+  currentSalaryMax    Float?
+  noticePeriod        String?
+  preferredLocations  Json?
+  availabilityStatus  String?
+  isSuspended         Boolean       @default(false)
+  deletedAt           DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  searchBlob          String?
+  applications        Application[]
+  user                User?         @relation(fields: [userId], references: [id])
+  savedJobs           SavedJob[]
+
+  @@index([specialty, location, experienceYears])
+}
+
+model SavedJob {
+  id          String    @id @default(uuid())
+  savedAt     DateTime  @default(now())
+  candidateId String
+  jobId       String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, jobId])
+}
+
+model Application {
+  id                      String                @id @default(uuid())
+  /// Full workflow status — see applicationStatus.ts for all valid values
+  status                  String                @default("Applied")
+  appliedOn               DateTime              @default(now())
+  cvSource                String?
+  uploadedCvName          String?
+  uploadedCvMime          String?
+  uploadedCvData          String?
+  /// JSON object: { [fieldId]: value } for job-specific questions
+  customFieldResponses    String?
+  cvCloudinaryId          String?
+  cvUrl                   String?
+  jobId                   String
+  candidateId             String
+  supportingDocuments     String?
+  interviewDate           DateTime?
+  interviewType           String?
+  meetingLink             String?
+  venue                   String?
+  interviewerName         String?
+  interviewerEmail        String?
+  interviewNotes          String?
+  interviewRound          Int                   @default(1)
+  interviewHistory        String?
+  candidateResponseNote   String?
+  interviewOutcomeNote    String?
+  requestedDocumentList   String?
+  documentRequestNote     String?
+  offerLetterUrl          String?
+  offerLetterCloudinaryId String?
+  joiningDate             DateTime?
+  joiningNote             String?
+  finalStatusNote         String?
+  isFlagged               Boolean               @default(false)
+  reviewedAt              DateTime?
+  interviewScheduledAt    DateTime?
+  offerSentAt             DateTime?
+  joinedAt                DateTime?
+  updatedAt               DateTime              @default(now()) @updatedAt
+  candidate               Candidate             @relation(fields: [candidateId], references: [id])
+  job                     Job                   @relation(fields: [jobId], references: [id])
+  applicationDocuments    ApplicationDocument[]
+
+  @@unique([jobId, candidateId])
+  @@index([status])
+  @@index([jobId])
+  @@index([candidateId])
+}
+
+model ApplicationDocument {
+  id            String      @id @default(uuid())
+  applicationId String
+  name          String
+  url           String
+  cloudinaryId  String
+  mime          String?
+  uploadedAt    DateTime    @default(now())
+  uploadedBy    String      @default("CANDIDATE")
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model PlanChangeLog {
+  id            String   @id @default(uuid())
+  hospitalId    String
+  fromPlan      String
+  toPlan        String
+  changeType    String
+  amountPaid    Float?
+  effectiveAt   DateTime
+  requestedAt   DateTime @default(now())
+  paymentStatus String   @default("Pending")
+  paymentRef    String?
+  note          String?
+  hospital      Hospital @relation(fields: [hospitalId], references: [id])
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+  tokenVersion Int       @default(0)
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminNotification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model PaymentOrder {
+  id              String   @id @default(uuid())
+  hospitalId      String
+  amount          Float
+  currency        String   @default("INR")
+  razorpayOrderId String   @unique
+  status          String   @default("CREATED")
+  planRequested   String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  hospital        Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  actorId    String?
+  actorRole  String?
+  meta       String?
+  createdAt  DateTime @default(now())
+}
+
+model ImpersonationLog {
+  id           String   @id @default(uuid())
+  adminId      String
+  targetUserId String
+  targetRole   String
+  targetEmail  String
+  issuedAt     DateTime @default(now())
+  expiresAt    DateTime
+}
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  mobile    String
+  role      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
+
+model OtpVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  mobile    String
+  role      String
+  purpose   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([mobile, role, purpose])
+}
+
+model SearchLog {
+  id         String   @id @default(uuid())
+  userId     String
+  searchedAt DateTime @default(now())
+  pullUsed   Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, pullUsed])
+}
